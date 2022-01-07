@@ -2,20 +2,14 @@ package main
 
 import (
 	"fmt"
-	//"log"
+	"log"
+
 	//"strconv"
 	"math/rand"
 
 	"github.com/shigeki/floc_simulator/packages/floc"
 )
 
-//
-// simulation1 calculate diff of cohortId when only one domain difference in two histories of n domains.
-// user1_history = {"example0.com", "example1.com", "example2.com", "example3.com", "example4.com"}
-// user2_history = {"example0.com", "example1.com", "example2.com", "example3.com", "example5.com"}
-//
-// diff =  cohortId_user1 - cohortId_user2
-//
 var kMaxNumberOfBitsInFloc uint8 = 50
 
 func getCohortId(domain_list []string, sorting_lsh_cluster_data []byte) (uint64, error) {
@@ -38,23 +32,30 @@ type Category struct {
 type Persona struct {
 	id                   int
 	preferred_categories []int
+	preferred_domains    []int
 }
 
 type User struct {
 	id              int
 	persona         int
-	visited_domains []int
+	visited_domains []string
+	cohortID        uint64
 }
 
 func main() {
+
+	sorting_lsh_cluster_data, err := floc.SetUpClusterData()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	n_domains := 20
 	max_domains_per_category := 9
 	n_categories := 4
 	max_categories_per_persona := 3
 	n_personas := 5
-	n_users := 10
-	//max_visits_per_user := 10
+	n_users := 100
+	max_visits_per_user := 10
 
 	domains := make(map[int]Domain)
 	categories := make(map[int]Category)
@@ -98,26 +99,58 @@ func main() {
 		_n_categories_in_persona := rand.Intn(max_categories_per_persona) + 1
 
 		var _preferred_categories []int
+		var _preferred_domains []int
 		for j := 0; j < _n_categories_in_persona; j++ {
-			_preferred_categories = append(_preferred_categories, rand.Intn(len(categories)))
+			_categoryID := rand.Intn(len(categories))
+			_preferred_categories = append(_preferred_categories, _categoryID)
+			_preferred_domains = append(_preferred_domains, categories[_categoryID].domains...)
 		}
+
+		//for k, v := range preferred_categories {
 
 		_persona := Persona{
 			id:                   n,
 			preferred_categories: _preferred_categories,
+			preferred_domains:    _preferred_domains,
 		}
 		personas[n] = _persona
 	}
 
 	// Randomly create users, i.e., a persona and set of visited domains
 	for n := 0; n < n_users; n++ {
-		_persona = rand.Intn(len(personas))
+		_persona := rand.Intn(len(personas))
 
-		// TODO: randomly select some domains based on persona
+		// TODO: randomly select some domains based on persona_
+		_num_visted_domains := rand.Intn(max_visits_per_user) + 1
+
+		var _visited_domains []string
+		for j := 0; j < _num_visted_domains; j++ {
+			var _domainID int
+
+			if rand.Float32() > 0.2 {
+				// Pick from persona category
+
+				_id := rand.Intn(len(personas[_persona].preferred_domains))
+				_domainID = personas[_persona].preferred_domains[_id]
+
+			} else {
+				// Or truly random
+				_domainID = rand.Intn(len(domains))
+			}
+
+			_visited_domains = append(_visited_domains, domains[_domainID].domain)
+		}
+
+		_cohortId, err := getCohortId(_visited_domains, sorting_lsh_cluster_data)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		_user := User{
-			id:      n,
-			persona: _persona,
+			id:              n,
+			persona:         _persona,
+			visited_domains: _visited_domains,
+			cohortID:        _cohortId,
 		}
 		users[n] = _user
 	}
@@ -142,40 +175,4 @@ func main() {
 		fmt.Printf("%v\n", value)
 	}
 
-	// Calculate cohort ID of each user
-
-	/*max := 12
-
-	for n := 11; n < max; n++ {
-		var domainlist1 []string
-		var domainlist2 []string
-
-		for i := 0; i < n-2; i++ {
-			j := strconv.Itoa(i)
-			domainlist1 = append(domainlist1, "example"+j+".com")
-			domainlist2 = append(domainlist2, "example"+j+".com")
-		}
-		domainlist1 = append(domainlist1, "example"+strconv.Itoa(n-1)+".com")
-		domainlist2 = append(domainlist2, "example"+strconv.Itoa(n)+".com")
-
-		sorting_lsh_cluster_data, err := floc.SetUpClusterData()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Println("Getting Cohort ID for domain list 1:", domainlist1)
-
-		cohortId1, err := getCohortId(domainlist1, sorting_lsh_cluster_data)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Println("Getting Cohort ID for domain list 2:", domainlist2)
-		cohortId2, err := getCohortId(domainlist2, sorting_lsh_cluster_data)
-		if err != nil {
-			log.Fatal(err)
-		}
-		diff := (int64)(cohortId1 - cohortId2)
-		fmt.Println(n+1, ",", cohortId1, ",", cohortId2, ",", diff)
-	}*/
 }
