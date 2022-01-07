@@ -7,6 +7,10 @@ import (
 	//"strconv"
 	"math/rand"
 
+	"encoding/csv"
+
+	"os"
+
 	"github.com/shigeki/floc_simulator/packages/floc"
 )
 
@@ -54,7 +58,7 @@ func main() {
 	n_categories := int64(100)
 	max_categories_per_persona := int64(10)
 	n_personas := int64(500)
-	n_users := int64(100000)
+	n_users := int64(1000000)
 	max_visits_per_user := int64(10)
 
 	domains := make(map[int64]Domain)
@@ -169,9 +173,31 @@ func main() {
 		fmt.Printf("%v\n", value)
 	}
 
-	fmt.Println("Users:")
-	for _, value := range users {
-		fmt.Printf("%v\n", value)
+	//fmt.Println("Users:")
+	//for _, value := range users {
+	//	fmt.Printf("%v\n", value)
+	//}
+
+	file, err := os.Create("users.csv")
+	checkError("Cannot create file", err)
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	for _, user := range users {
+		var out []string
+		out = append(out, fmt.Sprintf("%d", user.id))
+		out = append(out, fmt.Sprintf("%d", user.persona))
+		out = append(out, fmt.Sprintf("%d", user.cohortID))
+		err := writer.Write(out)
+		checkError("Cannot write to file", err)
 	}
 
+}
+
+func checkError(message string, err error) {
+	if err != nil {
+		log.Fatal(message, err)
+	}
 }
