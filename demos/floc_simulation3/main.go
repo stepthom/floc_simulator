@@ -20,26 +20,26 @@ func getCohortId(domain_list []string, sorting_lsh_cluster_data []byte) (uint64,
 }
 
 type Domain struct {
-	id     int
+	id     int64
 	domain string
 }
 
 type Category struct {
-	id      int
-	domains []int
+	id      int64
+	domains []int64
 }
 
 type Persona struct {
-	id                   int
-	preferred_categories []int
-	preferred_domains    []int
+	id                   int64
+	preferred_categories []int64
+	preferred_domains    []int64
 }
 
 type User struct {
-	id              int
-	persona         int
+	id              int64
+	persona         int64
 	visited_domains []string
-	cohortID        uint64
+	cohortID        int64
 }
 
 func main() {
@@ -49,21 +49,21 @@ func main() {
 		log.Fatal(err)
 	}
 
-	n_domains := 20
-	max_domains_per_category := 9
-	n_categories := 4
-	max_categories_per_persona := 3
-	n_personas := 5
-	n_users := 100
-	max_visits_per_user := 10
+	n_domains := int64(10000)
+	max_domains_per_category := int64(9)
+	n_categories := int64(100)
+	max_categories_per_persona := int64(10)
+	n_personas := int64(500)
+	n_users := int64(100000)
+	max_visits_per_user := int64(10)
 
-	domains := make(map[int]Domain)
-	categories := make(map[int]Category)
-	personas := make(map[int]Persona)
-	users := make(map[int]User)
+	domains := make(map[int64]Domain)
+	categories := make(map[int64]Category)
+	personas := make(map[int64]Persona)
+	users := make(map[int64]User)
 
 	// Randomly create domains
-	for n := 0; n < n_domains; n++ {
+	for n := int64(0); n < n_domains; n++ {
 
 		_domain := Domain{
 			id:     n,
@@ -74,14 +74,14 @@ func main() {
 	}
 
 	// Randomly create categories, and assign domains to categories
-	for n := 0; n < n_categories; n++ {
+	for n := int64(0); n < n_categories; n++ {
 
 		// Number of domains assigned category
-		_n_domains_in_category := rand.Intn(max_domains_per_category) + 1
+		_n_domains_in_category := rand.Int63n(max_domains_per_category) + 1
 
-		var _domains []int
-		for j := 1; j < _n_domains_in_category; j++ {
-			_domains = append(_domains, rand.Intn(len(domains)))
+		var _domains []int64
+		for j := int64(0); j < _n_domains_in_category; j++ {
+			_domains = append(_domains, rand.Int63n(int64(len(domains))))
 		}
 
 		_category := Category{
@@ -93,15 +93,15 @@ func main() {
 	}
 
 	// Randomly create persona, i.e., subset of categories
-	for n := 0; n < n_personas; n++ {
+	for n := int64(0); n < n_personas; n++ {
 
 		// Number of domains assigned category
-		_n_categories_in_persona := rand.Intn(max_categories_per_persona) + 1
+		_n_categories_in_persona := rand.Int63n(max_categories_per_persona) + 1
 
-		var _preferred_categories []int
-		var _preferred_domains []int
-		for j := 0; j < _n_categories_in_persona; j++ {
-			_categoryID := rand.Intn(len(categories))
+		var _preferred_categories []int64
+		var _preferred_domains []int64
+		for j := int64(0); j < _n_categories_in_persona; j++ {
+			_categoryID := rand.Int63n(int64(len(categories)))
 			_preferred_categories = append(_preferred_categories, _categoryID)
 			_preferred_domains = append(_preferred_domains, categories[_categoryID].domains...)
 		}
@@ -117,25 +117,24 @@ func main() {
 	}
 
 	// Randomly create users, i.e., a persona and set of visited domains
-	for n := 0; n < n_users; n++ {
-		_persona := rand.Intn(len(personas))
+	for n := int64(0); n < n_users; n++ {
+		_persona := rand.Int63n(int64(len(personas)))
 
-		// TODO: randomly select some domains based on persona_
-		_num_visted_domains := rand.Intn(max_visits_per_user) + 1
+		// Randomly select some domains that this user visits
+		_num_visted_domains := rand.Int63n(max_visits_per_user) + 1
 
 		var _visited_domains []string
-		for j := 0; j < _num_visted_domains; j++ {
-			var _domainID int
+		for j := int64(0); j < _num_visted_domains; j++ {
+			var _domainID int64
 
 			if rand.Float32() > 0.2 {
 				// Pick from persona category
-
-				_id := rand.Intn(len(personas[_persona].preferred_domains))
+				_id := rand.Int63n(int64(len(personas[_persona].preferred_domains)))
 				_domainID = personas[_persona].preferred_domains[_id]
 
 			} else {
 				// Or truly random
-				_domainID = rand.Intn(len(domains))
+				_domainID = rand.Int63n(int64(len(domains)))
 			}
 
 			_visited_domains = append(_visited_domains, domains[_domainID].domain)
@@ -150,7 +149,7 @@ func main() {
 			id:              n,
 			persona:         _persona,
 			visited_domains: _visited_domains,
-			cohortID:        _cohortId,
+			cohortID:        int64(_cohortId),
 		}
 		users[n] = _user
 	}
