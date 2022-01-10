@@ -36,39 +36,64 @@ func simHashBits(features WeightedFeatures, output_dimention uint8) uint64 {
 	var result uint64 = 0
 	var d uint8
 
-	fmt.Println("\nIn simHashBits:")
+	printLots := false
+
+	if printLots {
+		fmt.Println("\nIn simHashBits:")
+	}
 	for d = 0; d < output_dimention; d++ {
 		var acc float64 = 0
 		var rand float64 = 0
-		fmt.Printf("\ncurrent result: %050b\n", result)
-		fmt.Println("\ncalculating bit:", d)
+
+		if printLots {
+			fmt.Printf("\ncurrent result: %050b\n", result)
+			fmt.Println("\ncalculating bit:", d)
+		}
 		for hash, weight := range features {
 			rand = randomGaussian(uint64(d), hash) * float64(weight)
 			acc += rand
-			fmt.Printf("    bit=%d, hash=%22d -> rand = % .3f\n", d, hash, rand)
+
+			if printLots {
+				fmt.Printf("    bit=%d, hash=%22d -> rand = % .3f\n", d, hash, rand)
+			}
 		}
 		if acc > 0 {
 
 			result |= (1 << d)
-			fmt.Printf("  sum of rand = %.3f -> positive, setting bit to 1\n", acc)
+
+			if printLots {
+				fmt.Printf("  sum of rand = %.3f -> positive, setting bit to 1\n", acc)
+			}
 		} else {
-			fmt.Printf("  sum of rand = %.3f -> negative, leaving bit as 0\n", acc)
+			if printLots {
+				fmt.Printf("  sum of rand = %.3f -> negative, leaving bit as 0\n", acc)
+			}
 		}
 	}
 
-	fmt.Printf("\nFinal result in binary:  %050b\n", result)
-	fmt.Println("Final result in decimal: ", result)
+	if printLots {
+		fmt.Printf("\nFinal result in binary:  %050b\n", result)
+		fmt.Println("Final result in decimal: ", result)
+	}
 	return result
 }
 
 func SimHashString(domain_list []string, kMaxNumberOfBitsInFloc uint8) uint64 {
 	features := make(WeightedFeatures, len(domain_list))
-	fmt.Println("\nIn SimHashString:")
+
+	printLots := false
+
+	if printLots {
+		fmt.Println("\nIn SimHashString:")
+	}
 	//fmt.Println("features:", features)
 	for _, domain := range domain_list {
 		hash := CityHash64V103([]byte(domain))
 		features[hash] = 1
-		fmt.Printf("domain = %20s -> hash = %d\n", domain, hash)
+
+		if printLots {
+			fmt.Printf("domain = %20s -> hash = %d\n", domain, hash)
+		}
 	}
 	sim_hash := simHashBits(features, kMaxNumberOfBitsInFloc)
 	return sim_hash

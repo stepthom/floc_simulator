@@ -13,9 +13,12 @@ func ApplySortingLsh(sim_hash uint64, cluster_data []byte, kMaxNumberOfBitsInFlo
 	var cumulative_sum uint64 = 0
 	var index uint64
 
-	fmt.Println("\nIn ApplySortingLsh:")
+	printLots := false
+	if printLots {
+		fmt.Println("\nIn ApplySortingLsh:")
 
-	fmt.Printf("\nGoing until cumulative_sum is bigger than sim_hash = %050b\n", sim_hash)
+		fmt.Printf("\nGoing until cumulative_sum is bigger than sim_hash = %050b\n", sim_hash)
+	}
 
 	for index = 0; index < uint64(len(cluster_data)); index++ {
 		// TODO implement google::protobuf::io::CodedInputStream::ReadVarint32
@@ -34,12 +37,14 @@ func ApplySortingLsh(sim_hash uint64, cluster_data []byte, kMaxNumberOfBitsInFlo
 
 		cumulative_sum += (1 << next)
 
-		if index%100 == 0 {
-			fmt.Println("")
-			fmt.Printf("index = %d\n", index)
-			fmt.Printf("  (decimal) next_combined = %8d, next = %8d, next shifted = %50d, cumulative_sum = %50d\n", next_combined, next, 1<<next, cumulative_sum)
-			fmt.Printf("   (binary) next_combined = %08b, next = %08b, next shifted = %050b, cumulative_sum = %050b\n", next_combined, next, 1<<next, cumulative_sum)
-			//fmt.Printf("index = %d, cumulative_sum = %d\n", index, cumulative_sum)
+		if printLots {
+			if index%100 == 0 {
+				fmt.Println("")
+				fmt.Printf("index = %d\n", index)
+				fmt.Printf("  (decimal) next_combined = %8d, next = %8d, next shifted = %50d, cumulative_sum = %50d\n", next_combined, next, 1<<next, cumulative_sum)
+				fmt.Printf("   (binary) next_combined = %08b, next = %08b, next shifted = %050b, cumulative_sum = %050b\n", next_combined, next, 1<<next, cumulative_sum)
+				//fmt.Printf("index = %d, cumulative_sum = %d\n", index, cumulative_sum)
+			}
 		}
 
 		if cumulative_sum > kExpectedFinalCumulativeSum {
@@ -51,7 +56,9 @@ func ApplySortingLsh(sim_hash uint64, cluster_data []byte, kMaxNumberOfBitsInFlo
 				return 0, errors.New("blocked")
 			}
 
-			fmt.Printf("\ncumulative_sum = %050b is bigger than sim_hash = %050b --> returning cohort %d\n", cumulative_sum, sim_hash, index)
+			if printLots {
+				fmt.Printf("\ncumulative_sum = %050b is bigger than sim_hash = %050b --> returning cohort %d\n", cumulative_sum, sim_hash, index)
+			}
 			return index, nil
 		}
 
