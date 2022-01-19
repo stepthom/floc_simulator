@@ -1,0 +1,11 @@
+domain_id,domain,category,rank
+0,google.com,search,1
+1,youtube.com,streaming,2
+2,facebook.com,social networks,3
+3,google.ca,search,4
+4,amazon.ca,marketplace,5
+5,twitter.com,social networks,6
+6,wikipedia.org,encyclopedias,7
+7,yahoo.com,news,8
+8,netflix.com,streaming,9
+9,instagram.com,social networks,10
