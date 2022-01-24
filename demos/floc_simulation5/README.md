@@ -45,4 +45,3 @@ The simulation can be run with a command like the following:
 ```
 python sim1.py
 ```
-
