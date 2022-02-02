@@ -13,6 +13,8 @@ import subprocess
 
 parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--pre-domains', type=str, default="pre_domains.csv")
+parser.add_argument('--n-domains', type=int, default=10)
 args = parser.parse_args()
 
 
@@ -71,44 +73,82 @@ print( get_cohortId(test_domains))
 # User faker package to randomly generate data, where necessary
 faker = Faker()
 
-# Randomly generate N domains;
+
+#################################################################################
+# Pre-defined, not random domains
+#################################################################################
+
+pre = pd.read_csv(args.pre_domains)
+start_domain = pre.shape[0]
+
+#################################################################################
+# Domains
+#################################################################################
+rows = pre.to_dict(orient='records')
+
+for i in range(start_domain, start_domain+args.n_domains):
+    
+    rows.append({
+        'domain_id': i,
+        'domain': faker.unique.domain_name(levels=1),
+        'rank': i,
+    })
+
+df_domains = pd.DataFrame(rows)
+df_domains = df_domains.sort_values('domain_id')
+
+print('\nDomains head and shape:')
+print(df_domains.head(15))
+print(df_domains.shape)
+df_domains.to_csv('sim1_domains.csv', index=False)
+
 
 res = []
 
-N = [20, 50, 100, 500, 1000]
+# Number of trials 
+T = 1000
 
-NUM_ADDS = [1, 2, 5, 10]
+# Number of visted domains (to start) per user
+D = [50, 100, 500, 1000]
 
-trials = 32
-trial_steps = 100
+# Percentage of added/new domains per trial
+A = [.01, 0.02, 0.05, 0.10, 0.20, 0.30, 0.50]
 
-total = len(N) * len(NUM_ADDS) * trials
-cur = 1
+_weights = np.array(1./df_domains['rank'])
 
-for n in N:
-    for num_add in NUM_ADDS:
-        for trial in range(trials):
-            print("{} / {}".format(cur, total))
-            cur = cur + 1
-            domains = [faker.domain_name(levels=1) for i in range(n)]
-            cohortId = get_cohortId(domains)
+for d in D:
+    for trial in range(T):
+        print("{} {} / {}".format(d, trial, T))
+        user1_domains = random.choices(
+            population = df_domains['domain'], 
+            weights = _weights,
+            k=d)
+        user1_cohortId = get_cohortId(user1_domains)
+    
+        for per_add in A:
+            
+                num_add = round(per_add * d)
+        
+                user2_domains = user1_domains + random.choices(
+                    population = df_domains['domain'], 
+                    weights = _weights,
+                    k=num_add)
+                user2_cohortId = get_cohortId(user2_domains)
+   
+                match = 0
+                if user1_cohortId == user2_cohortId:
+                    match = 1
 
-            matches = 0
-            for i in range(trial_steps):
-                _domains = domains + [faker.unique.domain_name(levels=1) for i in range(num_add)]
-                new_cohortId = get_cohortId(_domains)
-
-                if new_cohortId == cohortId:
-                    matches = matches + 1
-
-            res.append({
-                'n': n,
-                'num_add': num_add,
-                'trial': trial,
-                'matches': matches,
-                'percent': matches / trial_steps,
-            })
+                res.append({
+                    'd': d,
+                    'trial': trial,
+                    'per_add': per_add,
+                    'num_add': num_add,
+                    'user1_cohortId': user1_cohortId,
+                    'user2_cohortId': user2_cohortId,
+                    'match': match,
+                })
     
 df = pd.DataFrame(res)
 print(df)
-df.to_csv('out.csv', index=False)
+df.to_csv('sim1_out.csv', index=False)
