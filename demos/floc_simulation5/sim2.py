@@ -139,17 +139,26 @@ print(df_domains.head(15))
 print(df_domains.shape)
 
 
-
 #################################################################################
 # Personas
 #################################################################################
 
 rows = []
 
+_weights = np.array(1./df_domains['rank'])
 for i in range(start_persona, args.n_personas):
+    print("persona {}".format(i))
     
-    _n_categories_in_persona = 3
+    _n_categories_in_persona = 2
     _category_ids = random.sample(list(df_categories['category_id']), k=_n_categories_in_persona)
+    print("category ids {}".format(_category_ids))
+    
+    _cat_weights = np.array([0.99 if x in _category_ids else 0.01 for x in df_domains['category_id'] ])
+    _all_weights = _weights * _cat_weights
+    
+    print(_weights)
+    print(_cat_weights)
+    print(_all_weights)
     
     rows.append({
         'persona_id': i,
@@ -173,7 +182,8 @@ rows = []
 
 for i in range(start_user, args.n_users):
     
-    print("User {}/{}".format(i, args.n_users))
+    if i % 100 == 0:
+        print("User {}/{}  ({:.2f}%)".format(i, args.n_users, 100*(i/args.n_users)))
     
     #_n_visited_domains = random.randint(a=5, b=100)
     _n_visited_domains = 20
@@ -181,39 +191,32 @@ for i in range(start_user, args.n_users):
     _persona_id = random.choice(df_personas['persona_id'])
     _category_ids = df_personas.iloc[_persona_id,]['category_ids']
     
-    _cohort_ids = []
-    
    # Now, figure out the probability of visiting each domain. The prob is affected by:
    # - The domain's rank: higher if rank is lower, lower otherwise
    # - The domain's category: higher if category is in user's persona, lower otherwise
     _weights = np.array(1./df_domains['rank'])
     _cat_weights = np.array([0.99 if x in _category_ids else 0.01 for x in df_domains['category_id'] ])
-    _weights = _weights * _cat_weights
+    _all_weights = _weights * _cat_weights
     
-    for week_id in range(52):
-        
-        _visited_domain_ids = random.choices(
-            population = df_domains['domain_id'], 
-            weights = _weights,
-            k=_n_visited_domains)
+    _visited_domain_names = random.choices(
+        population = df_domains['domain'], 
+        weights = _all_weights,
+        k=_n_visited_domains)
 
-        _visited_domain_names = list(df_domains.loc[df_domains.index[_visited_domain_ids],'domain'])
-
-        _cohort_id = get_cohortId(_visited_domain_names)
-        _cohort_ids.append(_cohort_id)
+    _cohort_id = get_cohortId(_visited_domain_names)
         
-    num_unique = len(set(_cohort_ids))
-      
     rows.append({
         'user_id': i,
         'persona_id': _persona_id,
-        'num_unique_cohort_ids': num_unique,
-        'per_unique_cohort_ids': (num_unique/52.),
-        'per_same_cohort_ids': (1. - (num_unique/52.)),
+        'cohort_id': _cohort_id,
      })
 
     
-df = pd.DataFrame(rows)
-new_fn = "{}/user_weeks.csv".format(args.out_dir)
+users = pd.DataFrame(rows)
+new_fn = "{}/sim2_users.csv".format(args.out_dir)
 print("Writing file: {}".format(new_fn))
-df.to_csv(new_fn, index=False)
+users.to_csv(new_fn, index=False)
+
+#################################################################################
+# Cohort ID Analysis
+#################################################################################
